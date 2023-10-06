@@ -821,7 +821,7 @@ public class MvcController {
       TestudoBankRepository.setCustomerCashBalance(jdbcTemplate, userID, appliedInterest); // update balance with applied interest
       TestudoBankRepository.setCustomerNumberOfDepositsForInterest(jdbcTemplate, userID, 0); // reset number of deposits
       String currentTime = SQL_DATETIME_FORMATTER.format(new java.util.Date());
-      int amountToDeposit = convertDollarsToPennies(user.getAmountToDeposit());
+      int amountToDeposit = appliedInterest - currentBalance;
       TestudoBankRepository.insertRowToTransactionHistoryTable(jdbcTemplate, userID, currentTime, TRANSACTION_HISTORY_DEPOSIT_ACTION, amountToDeposit);
 
       return "account_info";
