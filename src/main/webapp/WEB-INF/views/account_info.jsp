@@ -39,6 +39,7 @@
     <span>Current $ETH Price: </span><span>${user.ethPrice}</span><br/>
     <span>Current $SOL Price: </span><span>${user.solPrice}</span><br/>
     <span>Re-payment logs: </span><span>${user.logs}</span><br/>
+    <span>Number of Deposits for Interest: </span><span>${user.numDepositsForInterest}</span><br/>
     <span>Transaction History: </span><span>${user.transactionHist}</span><br/>
     <span>Transfer History: </span><span>${user.transferHist}</span><br/>
     <span>Crypto History: </span><span>${user.cryptoHist}</span><br/>
