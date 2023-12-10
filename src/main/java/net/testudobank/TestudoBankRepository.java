@@ -15,6 +15,39 @@ public class TestudoBankRepository {
     return customerPassword;
   }
 
+  public static void setCustomerPassword(JdbcTemplate jdbcTemplate, String customerID, String newPassword) { 
+    String resetPassword = String.format("UPDATE Passwords SET Password = '%s' WHERE CustomerID='%s';", newPassword, customerID);
+    jdbcTemplate.update(resetPassword);
+  }
+
+  public static int getResetLink(JdbcTemplate jdbcTemplate, String customerID) {
+    String getResetLink = String.format("SELECT resetLink FROM Passwords WHERE CustomerID='%s';", customerID);
+    int resetLink = jdbcTemplate.queryForObject(getResetLink, int.class);
+    return resetLink;
+  }
+
+  public static void setResetLink(JdbcTemplate jdbcTemplate, String customerID, int newLink) {
+    String resetLink = String.format("UPDATE Passwords SET resetLink = %d WHERE CustomerID='%s';", newLink, customerID);
+    jdbcTemplate.update(resetLink);
+  }
+
+  public static void setExpirationTime(JdbcTemplate jdbcTemplate, String customerID, String newExpirationTime) { 
+    String resetExpirationTime = String.format("UPDATE Passwords SET expirationTime = '%s' WHERE CustomerID='%s';", newExpirationTime, customerID);
+    jdbcTemplate.update(resetExpirationTime);
+  }
+
+  public static String getExpirationTime(JdbcTemplate jdbcTemplate, String customerID) {
+    String getExpirationTime = String.format("SELECT expirationTime FROM Passwords WHERE CustomerID='%s';", customerID);
+    String expirationTime = jdbcTemplate.queryForObject(getExpirationTime, String.class);
+    return expirationTime;
+  }
+
+  public static String getCustomerEmail(JdbcTemplate jdbcTemplate, String customerID) {
+    String getCustomerEmailSql = String.format("SELECT Email FROM Passwords WHERE CustomerID='%s';", customerID);
+    String customerEmail = jdbcTemplate.queryForObject(getCustomerEmailSql, String.class);
+    return customerEmail;
+  }
+
   public static int getCustomerNumberOfReversals(JdbcTemplate jdbcTemplate, String customerID) {
     String getNumberOfReversalsSql = String.format("SELECT NumFraudReversals FROM Customers WHERE CustomerID='%s';", customerID);
     int numOfReversals = jdbcTemplate.queryForObject(getNumberOfReversalsSql, Integer.class);
