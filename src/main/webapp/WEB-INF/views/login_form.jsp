@@ -46,6 +46,7 @@
 				
 			<form:button>Log in</form:button>
 		</form:form>
+    <a href='/forgotpassword'>Forgot Password?</a>
     <a href='/'>Home</a>
 	</div>
 </body>

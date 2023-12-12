@@ -17,6 +17,15 @@ public class User {
   @Setter @Getter @ToString.Include
 	private String password;
 
+  @Setter @Getter @ToString.Include
+	private int resetLink;
+
+  @Setter @Getter @ToString.Include
+	private String expirationTime;
+
+  @Setter @Getter @ToString.Include
+  private String email;
+
   @Setter @Getter
   private String firstName;
 

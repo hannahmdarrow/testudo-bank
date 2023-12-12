@@ -4,7 +4,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.Map;
@@ -13,10 +15,14 @@ import java.util.Date;
 import java.util.HashSet;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import java.util.Optional;
+import java.util.Random;
 import java.util.Set;
+
+import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -85,6 +91,54 @@ public class MvcController {
 
 		return "login_form";
 	}
+  
+  /**
+   * HTML GET request handler that serves the "forgotpassword_form" page to the user.
+   * An empty `User` object is also added to the Model as an Attribute to store
+   * the user's form input.
+   * 
+   * @param model
+   * @return "forgotpassword_form" page
+   */
+  @GetMapping("/forgotpassword")
+  public String showForgotPasswordForm(Model model) {
+    User user = new User();
+    model.addAttribute("user", user);
+
+		return "forgotpassword_form";
+  }
+
+  /**
+   * HTML GET request handler that serves the "resetpassword_form" page to the user.
+   * An empty `User` object is also added to the Model as an Attribute to store
+   * the user's form input.
+   * 
+   * @param model
+   * @return "resetpassword_form" page
+   */
+  @GetMapping("/resetpassword")
+  public String showResetPasswordForm(Model model) {
+    User user = new User();
+    model.addAttribute("user", user);
+
+		return "resetpassword_form";
+  }
+
+  /**
+   * HTML GET request handler that serves the "resetforgotpassword_form" page to the user.
+   * An empty `User` object is also added to the Model as an Attribute to store
+   * the user's form input.
+   * 
+   * @param model
+   * @param id
+   * @return "resetforgotpassword_form" page
+   */
+  @GetMapping("/resetpassword/{id}")
+  public String showResetForgotPasswordForm(Model model, @PathVariable("id") String id) {
+    User user = new User();
+    model.addAttribute("user", user);
+		return "resetforgotpassword_form";
+  }
 
   /**
    * HTML GET request handler that serves the "deposit_form" page to the user.
@@ -180,6 +234,7 @@ public class MvcController {
 		return "sellcrypto_form";
 	}
 
+
   //// HELPER METHODS ////
 
   /**
@@ -240,6 +295,17 @@ public class MvcController {
     user.setNumDepositsForInterest(user.getNumDepositsForInterest());
   }
 
+  private boolean hasExpired(String expirationTime) {
+    LocalDateTime currDateTime = LocalDateTime.now();
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    LocalDateTime dateTime = LocalDateTime.parse(expirationTime, formatter);
+    if (currDateTime.isAfter(dateTime)) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
   // Converts dollar amounts in frontend to penny representation in backend MySQL DB
   private static int convertDollarsToPennies(double dollarAmount) {
     return (int) (dollarAmount * 100);
@@ -288,6 +354,113 @@ public class MvcController {
       return "welcome";
     }
 	}
+
+  /**
+   * HTML POST request handler that uses user input from Forgot Password page to determine 
+   * password reset email success or failure.
+   * 
+   * Queries 'passwords' table in MySQL DB for the correct email associated with the
+   * username ID given by the user. Compares the user's email attempt with the correct
+   * email.
+   * 
+   * If the email attempt is correct, the "emailsent_form" page is served to the customer.
+   * 
+   * If the email attempt is incorrect, the user is redirected to the "welcome" page.
+   * 
+   * @param user
+   * @return "emailsent_form" page if login successful. Otherwise, redirect to "welcome" page.
+   */
+  @PostMapping("/forgotpassword")
+  public String submitForgotPassword(@ModelAttribute("user") User user) {
+    String userID = user.getUsername();
+    String userEmailAttempt = user.getEmail();
+
+    // Retrieve correct password for this customer.
+    String userEmail = TestudoBankRepository.getCustomerEmail(jdbcTemplate, userID);
+
+    if (userEmailAttempt.equals(userEmail)) {
+      TestudoBankRepository.setExpirationTime(jdbcTemplate, userID, LocalDateTime.now().plusMinutes(30).toString());
+      int randomNumber = (int) Math.pow(10, 8);
+      randomNumber = randomNumber + new Random().nextInt(9 * randomNumber);
+      TestudoBankRepository.setResetLink(jdbcTemplate, userID, randomNumber);
+      String link = "localhost:8080/resetpassword/" + randomNumber;
+      // TODO: send email with link
+
+      return "emailsent_form";
+    } else {
+      return "welcome";
+    }
+  }
+
+  /**
+   * HTML POST request handler that uses user input from Reset Password page to determine 
+   * password reset success or failure.
+   * 
+   * Queries 'passwords' table in MySQL DB for the correct password associated with the
+   * username ID given by the user. Compares the user's password attempt with the correct
+   * password.
+   * 
+   * If the password attempt is correct, the "account_info" page is served to the customer.
+   * 
+   * If the password attempt is incorrect, the user is redirected to the "welcome" page.
+   * 
+   * @param user
+   * @param request
+   * @return "account_info" page if login successful. Otherwise, redirect to "welcome" page.
+   */
+  @PostMapping("/resetpassword")
+  public String submitResetPassword(@ModelAttribute("user") User user, HttpServletRequest request) {
+    String userID = user.getUsername();
+    String userPasswordAttempt = user.getPassword();
+    String newPassword = request.getParameter("newpassword");
+
+    // Retrieve correct password for this customer.
+    String userPassword = TestudoBankRepository.getCustomerPassword(jdbcTemplate, userID);
+
+    if (userPasswordAttempt.equals(userPassword)) {
+      TestudoBankRepository.setCustomerPassword(jdbcTemplate, userID, newPassword);
+      updateAccountInfo(user);
+
+      return "account_info";
+    } else {
+      return "welcome";
+    }
+  }
+
+  /**
+   * HTML POST request handler that uses user input from Forgot Password Reset page to determine 
+   * password reset success or failure.
+   * 
+   * Queries 'passwords' table in MySQL DB for the correct unique link and expiration associated with the
+   * username ID given by the user. Compares the user's link and time attempt with the correct
+   * fields.
+   * 
+   * If the reset attempt is correct, the "account_info" page is served to the customer.
+   * 
+   * If the password attempt is incorrect, the user is redirected to the "welcome" page.
+   * 
+   * @param user 
+   * @param request
+   * @param id
+   * @return "account_info" page if login successful. Otherwise, redirect to "welcome" page.
+   */
+  @PostMapping("/resetpassword/{id}")
+  public String submitResetForgotPassword(@ModelAttribute("user") User user, HttpServletRequest request, @PathVariable("id") String id) {
+    String userID = user.getUsername();
+    int reset = TestudoBankRepository.getResetLink(jdbcTemplate, userID);
+    String resetLink = "" + reset;
+    String expirationTime = TestudoBankRepository.getExpirationTime(jdbcTemplate, userID);
+    String newPassword = request.getParameter("newpassword");
+
+		if (resetLink.equals(id) && !hasExpired(expirationTime)) {
+			TestudoBankRepository.setResetLink(jdbcTemplate, userID, 0);
+      TestudoBankRepository.setExpirationTime(jdbcTemplate, userID, LocalDateTime.now().toString());
+      TestudoBankRepository.setCustomerPassword(jdbcTemplate, userID, newPassword);
+      updateAccountInfo(user);
+			return "account_info";
+		}
+		return "welcome";
+  }
 
   /**
    * HTML POST request handler for the Deposit Form page.

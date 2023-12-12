@@ -29,6 +29,9 @@ cursor.execute(create_customer_table_sql)
 create_password_table_sql = '''
 CREATE TABLE Passwords (
   CustomerID varchar(255),
+  Email varchar(255),
+  ResetLink varchar(255),
+  ExpirationTime DATETIME,
   Password varchar(255)
 );
 '''
@@ -120,6 +123,9 @@ for i in range(num_customers_to_add):
     # generate random name, balance, and password
     customer_first_name = names.get_first_name()
     customer_last_name = names.get_last_name()
+    customer_email = customer_first_name + customer_last_name + "@ymail.com"
+    reset_link = 0
+    expiration_time  = "2019-01-21T05:47:08.644"
     customer_balance = random.randint(100, 10000) * 100 # multiply by 100 to have a penny value of 0
     customer_password = ''.join(random.choices(string.ascii_lowercase + string.ascii_uppercase + string.digits, k = 9))
     
@@ -129,7 +135,7 @@ for i in range(num_customers_to_add):
     # both the balance and overdraftbalance columns represent the total dollar amount as pennies instead of dollars.
     insert_customer_sql = '''
     INSERT INTO Customers
-    VALUES  ({0},{1},{2},{3},{4},{5}, {6});
+    VALUES  ({0},{1},{2},{3},{4},{5},{6});
     '''.format("'" + customer_id + "'",
                 "'" + customer_first_name + "'",
                 "'" + customer_last_name + "'",
@@ -142,8 +148,11 @@ for i in range(num_customers_to_add):
     # add customer ID and password to Passwords table
     insert_password_sql = '''
     INSERT INTO Passwords
-    VALUES  ({0},{1});
+    VALUES  ({0},{1},{2},{3},{4});
     '''.format("'" + customer_id + "'",
+              "'" + customer_email + "'",
+              "'" + reset_link + "'",
+              "'" + expiration_time + "'",
                 "'" + customer_password + "'")
     cursor.execute(insert_password_sql)
     
